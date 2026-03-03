@@ -1,0 +1,53 @@
+/* Eval Dashboard — clean white/blue, dark mode */
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-muted: #dbeafe;
+  --border: #e2e8f0;
+  --timeline-fault: #dc2626;
+  --timeline-ok: #22c55e;
+  --timeline-neutral: #94a3b8;
+  --selection-fill: rgba(37, 99, 235, 0.2);
+  --scrollbar-bg: #e2e8f0;
+  --scrollbar-thumb: #94a3b8;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-muted: #1e3a8a;
+  --border: #334155;
+  --timeline-fault: #f87171;
+  --timeline-ok: #4ade80;
+  --timeline-neutral: #64748b;
+  --selection-fill: rgba(59, 130, 246, 0.25);
+  --scrollbar-bg: #334155;
+  --scrollbar-thumb: #64748b;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
