@@ -1,0 +1,27 @@
+{
+  "dataset_info": {
+    "split": "val",
+    "num_windows": 1453,
+    "num_faulty_windows": 362,
+    "num_normal_windows": 1091,
+    "fault_percentage": 0.25,
+    "window_size": 300,
+    "num_sensors": 8,
+    "sensor_names": [
+      "ENGINE_RPM ()",
+      "VEHICLE_SPEED ()",
+      "THROTTLE ()",
+      "ENGINE_LOAD ()",
+      "COOLANT_TEMPERATURE ()",
+      "INTAKE_MANIFOLD_PRESSURE ()",
+      "SHORT_TERM_FUEL_TRIM_BANK_1 ()",
+      "LONG_TERM_FUEL_TRIM_BANK_1 ()"
+    ],
+    "forecast_horizons": [
+      1,
+      5,
+      10
+    ],
+    "created_at": "2026-03-02T22:34:44.694622"
+  }
+}

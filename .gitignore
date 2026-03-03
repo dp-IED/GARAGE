@@ -24,6 +24,7 @@ checkpoints/
 # Large data (regenerate via create_shared_dataset.py)
 data/carOBD/obdiidata/
 data/shared_dataset/*.npz
+data/KIT/dataset/
 
 # Demo cache
 demo_cache.pkl
