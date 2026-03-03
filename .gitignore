@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+
+# IDE / tools
+.claude/
+.cursor/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+venv/
+.venv/
+.env
+
+# Model artifacts
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Large data (regenerate via create_shared_dataset.py)
+data/carOBD/obdiidata/
+data/shared_dataset/*.npz
+
+# Demo cache
+demo_cache.pkl
+
+# Node
+node_modules/
