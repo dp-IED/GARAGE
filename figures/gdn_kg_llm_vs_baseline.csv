@@ -1,0 +1,9 @@
+Metric,LLM Baseline,GDN-KG-LLM,Improvement (%)
+Window F1,0.425,0.721,+69.6%
+Window Precision,1.000,0.915,-8.5%
+Window Recall,0.270,0.595,+120%
+Sensor F1,0.384,0.590,+53.6%
+Sensor Precision,1.000,0.581,-41.9%
+Sensor Recall,0.238,0.600,+152%
+Fault Type Accuracy,0.601,0.693,+15.3%
+BERTScore F1,0.871,0.864,-0.8%
