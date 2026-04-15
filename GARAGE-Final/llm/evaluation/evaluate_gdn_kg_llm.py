@@ -226,29 +226,23 @@ def extract_window_kg_context(
         if thresholds:
             context["distribution_thresholds"] = thresholds
 
-        # Extract entities with types and subsystems
+        # Extract entities with types and subsystems (checkpoint calibration)
         for sensor_name in kg.sensor_names:
             desc = SENSOR_DESCRIPTIONS.get(sensor_name, {})
             subsystem = SENSOR_SUBSYSTEMS.get(sensor_name, "Unknown")
-            # Use distribution-based threshold if available
-            if thresholds:
-                anomaly_threshold_per_sensor = thresholds.get(
-                    "anomaly_threshold_per_sensor", {}
-                )
-                anomaly_threshold = anomaly_threshold_per_sensor.get(
-                    sensor_name, thresholds.get("anomaly_threshold_global", 0.5)
-                )
-            else:
-                anomaly_threshold = 0.5  # Fallback
             stat = window_stats.get(sensor_name)
-            is_faulty = stat.anomaly_score > anomaly_threshold if stat else False
+            if hasattr(kg, "_calibrated_threshold_for_sensor"):
+                thr_c = kg._calibrated_threshold_for_sensor(sensor_name)
+            else:
+                thr_c = 0.5
+            is_faulty = stat.anomaly_score > thr_c if stat else False
 
             entity_info = {
                 "name": sensor_name,
                 "type": "Sensor",
                 "subsystem": subsystem,
                 "description": desc.get("description", ""),
-                "is_faulty": is_faulty,  # Based on GDN prediction threshold, not ground truth
+                "is_faulty": is_faulty,
             }
             context["entities"].append(entity_info)
 
@@ -256,12 +250,14 @@ def extract_window_kg_context(
         # Include all violations and relationships involving sensors with high GDN prediction scores
         # Also include significant correlations (threshold 0.3)
         correlation_threshold = 0.3
-        prediction_threshold = 0.5  # Threshold for GDN predictions (not ground truth)
-        anomalous_sensors = {
-            sensor_name
-            for sensor_name, stat in window_stats.items()
-            if stat.anomaly_score > prediction_threshold
-        }  # Based on GDN predictions
+        anomalous_sensors = set()
+        for sensor_name, stat in window_stats.items():
+            if hasattr(kg, "_calibrated_threshold_for_sensor"):
+                thr_a = kg._calibrated_threshold_for_sensor(sensor_name)
+            else:
+                thr_a = 0.5
+            if stat.anomaly_score > thr_a:
+                anomalous_sensors.add(sensor_name)
 
     for u, v, data in window_graph.edges(data=True):
         edge_type = data.get("edge_type", "correlates_with")
@@ -353,12 +349,12 @@ def extract_window_kg_context(
                     "anomaly_scores": {},
                 }
 
-                # Use prediction threshold (0.5) for GDN predictions, not ground truth
-                prediction_threshold = 0.5
                 for sensor_name, stat in prev_stats.items():
-                    if (
-                        stat.anomaly_score > prediction_threshold
-                    ):  # Based on GDN prediction threshold
+                    if hasattr(kg, "_calibrated_threshold_for_sensor"):
+                        thr_p = kg._calibrated_threshold_for_sensor(sensor_name)
+                    else:
+                        thr_p = 0.5
+                    if stat.anomaly_score > thr_p:
                         temporal_info["faulty_sensors"].append(sensor_name)
                         temporal_info["anomaly_scores"][sensor_name] = float(
                             stat.anomaly_score
@@ -464,13 +460,8 @@ def format_kg_context_as_adjacency_matrix(
     sensor_status = []
     for i, sensor_name in enumerate(sensor_names):
         stat = window_stats.get(sensor_name)
-        if thresholds:
-            anomaly_threshold_per_sensor = thresholds.get(
-                "anomaly_threshold_per_sensor", {}
-            )
-            threshold = anomaly_threshold_per_sensor.get(
-                sensor_name, thresholds.get("anomaly_threshold_global", 0.5)
-            )
+        if hasattr(kg, "_calibrated_threshold_for_sensor"):
+            threshold = kg._calibrated_threshold_for_sensor(sensor_name)
         else:
             threshold = 0.5
         is_faulty = stat.anomaly_score > threshold if stat else False
@@ -1109,12 +1100,22 @@ def run_kg_sanity_check(
         sensor_embeddings=kg_data["sensor_embeddings"],
         adjacency_matrix=kg_data["adjacency_matrix"],
     )
+    per_sensor_ck = predictor.per_sensor_thresholds
+    per_sensor_arg = None
+    if (
+        isinstance(per_sensor_ck, np.ndarray)
+        and per_sensor_ck.size == len(kg_data["sensor_names"])
+    ):
+        per_sensor_arg = per_sensor_ck
+
     kg.construct(
         X_windows=kg_data["X_windows"],
         gdn_predictions=kg_data["gdn_predictions"],
         X_windows_unnormalized=kg_data.get("X_windows_unnormalized"),
         sensor_labels_true=sensor_labels_true,
         window_labels_true=window_labels_true,
+        calibrated_sensor_threshold=predictor.sensor_score_threshold,
+        calibrated_per_sensor_thresholds=per_sensor_arg,
     )
 
     n_nodes = kg.kg.number_of_nodes()
@@ -1295,8 +1296,6 @@ def evaluate_gdn_kg_llm(
         import torch
 
         checkpoint = torch.load(model_path, map_location="cpu")
-        calibrated = checkpoint.get("calibrated_thresholds", {}) if isinstance(checkpoint, dict) else {}
-        sensor_threshold = float(calibrated.get("sensor", checkpoint.get("sensor_threshold", 0.30) if isinstance(checkpoint, dict) else 0.30))
         if "sensor_embeddings" in checkpoint:
             detected_embed_dim = checkpoint["sensor_embeddings"].shape[1]
             print(f"  Detected embed_dim from checkpoint: {detected_embed_dim}")
@@ -1304,7 +1303,6 @@ def evaluate_gdn_kg_llm(
             detected_embed_dim = 32
     except Exception:
         detected_embed_dim = 32
-        sensor_threshold = 0.30
 
     predictor = GDNPredictor(
         model_path=model_path,
@@ -1315,6 +1313,7 @@ def evaluate_gdn_kg_llm(
         hidden_dim=32,
         device=device,
     )
+    sensor_threshold = predictor.sensor_score_threshold
 
     print(f"  Model loaded in {time.time() - start_time:.2f} seconds")
     print()
@@ -1367,14 +1366,24 @@ def evaluate_gdn_kg_llm(
         sensor_embeddings=kg_data["sensor_embeddings"],
         adjacency_matrix=kg_data["adjacency_matrix"],
     )
+    per_sensor_ck = predictor.per_sensor_thresholds
+    per_sensor_arg = None
+    if (
+        isinstance(per_sensor_ck, np.ndarray)
+        and per_sensor_ck.size == len(kg_data["sensor_names"])
+    ):
+        per_sensor_arg = per_sensor_ck
+
     kg.construct(
         X_windows=kg_data["X_windows"],
         gdn_predictions=kg_data[
             "gdn_predictions"
         ],  # GDN predictions, not ground truth labels
         X_windows_unnormalized=kg_data.get("X_windows_unnormalized"),
-        sensor_labels_true=sensor_labels_true,  # For data-driven thresholds only
-        window_labels_true=window_labels_true,  # For data-driven thresholds only
+        sensor_labels_true=sensor_labels_true,
+        window_labels_true=window_labels_true,
+        calibrated_sensor_threshold=sensor_threshold,
+        calibrated_per_sensor_thresholds=per_sensor_arg,
     )
 
     kg_time = time.time() - start_time
