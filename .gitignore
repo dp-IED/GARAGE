@@ -15,11 +15,14 @@ venv/
 .venv/
 .env
 
-# Model artifacts
-checkpoints/
+# Model artifacts — ignore weight files by default; track repo `checkpoints/` trees only.
 *.pt
 *.pth
 *.ckpt
+!checkpoints/
+!checkpoints/**
+!GARAGE-Final/checkpoints/
+!GARAGE-Final/checkpoints/**
 
 # Large data (regenerate via create_shared_dataset.py)
 data/shared_dataset/*.npz
