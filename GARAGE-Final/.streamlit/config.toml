@@ -1,0 +1,4 @@
+# Avoid Streamlit file watcher traversing PyTorch's `torch.classes` (crashes on reload).
+# See demo/.streamlit/config.toml for the same rationale.
+[server]
+fileWatcherType = "none"

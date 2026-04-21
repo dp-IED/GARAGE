@@ -1,0 +1,4 @@
+{
+  "base_url": "http://localhost:1234/v1",
+  "model": "granite-4.0-h-micro-GGUF"
+}

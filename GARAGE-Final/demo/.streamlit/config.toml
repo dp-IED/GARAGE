@@ -1,0 +1,6 @@
+# PyTorch registers lazy proxies on `torch.classes`; Streamlit's default file watcher
+# introspects `module.__path__` and crashes with:
+#   RuntimeError: Tried to instantiate class '__path__._path' ...
+# Disabling the watcher avoids that. Reload the browser after code changes, or restart Streamlit.
+[server]
+fileWatcherType = "none"
