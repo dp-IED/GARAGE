@@ -1,0 +1,129 @@
+# GDN Results - Baseline vs Retrained
+# Last updated: 2026-03-02
+
+================================================================================
+RETRAINED MODEL (checkpoints/stage2_clean_best.pt) - 2026-03-02
+   Test set: data/shared_dataset/test.npz (590 windows, 163 faulty)
+   Dataset created: 2026-03-02
+================================================================================
+
+WINDOW-LEVEL METRICS
+  Precision:  1.000
+  Recall:     0.994
+  F1:         0.997
+  Accuracy:   0.998
+
+SENSOR-LEVEL METRICS
+  Precision:  1.000
+  Recall:     0.995
+  F1:         0.997
+
+AT CHECKPOINT THRESHOLDS (window=0.042, sensor=0.219)
+  Window: P=1.0, R=1.0, F1=1.0
+  Sensor: P=1.0, R=0.995, F1=0.997
+
+PER-DRIVE
+  drive10.csv: 431 windows, 113 faulty → F1=0.996, P=1.0, R=0.991
+  drive6.csv:  159 windows, 50 faulty  → F1=1.0,   P=1.0, R=1.0
+
+================================================================================
+PREVIOUS BASELINE (old test set, 850 windows)
+================================================================================
+
+1. results/results_gdn_only.json (previous run)
+   Test set: 850 windows (old dataset)
+================================================================================
+
+WINDOW-LEVEL METRICS
+  Precision:  0.654
+  Recall:     0.904
+  F1:         0.759
+  Accuracy:   0.853
+
+SENSOR-LEVEL METRICS
+  Precision:  0.596
+  Recall:     0.896
+  F1:         0.716
+
+FAULT_TYPE
+  Accuracy: 0.0 (n=218)
+
+================================================================================
+2. Most recent checkpoint (stage2_clean_phase2_50ep_baseline_20260301_162019)
+   scripts/evaluation/run_gdn_eval.py format
+   Thresholds: checkpoint-calibrated (window=0.177, sensor=0.696)
+================================================================================
+
+AT CHECKPOINT THRESHOLDS (window=0.177, sensor=0.696)
+  Window (classification):
+    Precision:  0.350
+    Recall:     1.000
+    F1:         0.519
+    Accuracy:   0.525
+
+  Sensor attribution:
+    Precision:  0.844
+    Recall:     0.888
+    F1:         0.865
+
+THRESHOLD SWEEP (best operating points)
+  Window F1 peak: ~0.748 at threshold 0.75 (P=0.624, R=0.931)
+  Sensor F1 peak: ~0.701 at threshold 0.75 (P=0.580, R=0.888)
+
+PER-DRIVE (drive10.csv, drive6.csv, idle44.csv, live31.csv)
+  drive10.csv: 441 windows, 120 faulty → F1=0.66, P=0.50, R=1.0
+  drive6.csv:  169 windows, 37 faulty  → F1=0.93, P=1.0,  R=0.86
+  idle44.csv:  31 windows,  7 faulty   → F1=0.92, P=1.0,  R=0.86
+  live31.csv:  209 windows, 54 faulty  → F1=0.91, P=1.0,  R=0.83
+
+Test fault rate: 25.6%
+
+================================================================================
+3. results/results_gdn_kg_llm.json (GDN + KG + LLM pipeline)
+================================================================================
+
+WINDOW-LEVEL
+  Precision:  0.516
+  Recall:     0.518
+  F1:         0.517
+  Accuracy:   0.752
+
+SENSOR-LEVEL
+  Precision:  0.313
+  Recall:     0.504
+  F1:         0.387
+
+FAULT_TYPE: 0.596 accuracy (n=218)
+
+================================================================================
+4. baseline_before_fix/results_gdn_only.json (older baseline)
+================================================================================
+
+WINDOW-LEVEL
+  Precision:  0.458
+  Recall:     0.963
+  F1:         0.620
+
+SENSOR-LEVEL
+  Precision:  0.311
+  Recall:     0.952
+  F1:         0.469
+
+================================================================================
+COMPARISON SUMMARY
+================================================================================
+
+  Model / Source              Window F1   Sensor F1   Test Set    Notes
+  -------------------------   ----------  ----------  ---------  -------------------
+  RETRAINED (stage2_clean)    0.997       0.997       590 win     Current best
+  Previous baseline           0.759       0.716       850 win     Old test set
+  stage2_clean_phase2        0.519*      0.865       850 win     *at thr=0.177
+  (phase2 @ thr=0.75)         0.748       0.701       850 win     Better balance
+  gdn_kg_llm                  0.517      0.387       850 win     Full pipeline
+  baseline_before_fix         0.620      0.469       850 win     Older baseline
+
+  NOTE: Retrained model evaluated on new test set (590 windows, created 2026-03-02).
+        Previous baselines used older 850-window test set. Direct comparison
+        is indicative but not strictly apples-to-apples.
+
+================================================================================
